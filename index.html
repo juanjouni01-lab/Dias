@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hasta nuestro reencuentro</title>
+
+<style>
+body{
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+  background:linear-gradient(180deg,#ffe6f0,#fff);
+  color:#6b2c4a;
+  overflow-x:hidden;
+}
+h1,h2{text-align:center}
+
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-box{background:#fff;padding:2rem;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.1);width:90%;max-width:350px}
+input,button{width:100%;padding:10px;margin-top:10px;border-radius:10px;border:1px solid #ccc;font-size:1rem}
+button{background:#ff7eb3;color:#fff;border:none;cursor:pointer}
+
+#app{display:none;padding-bottom:80px}
+
+#timerBox{max-width:600px;margin:20px auto;background:#fff;border-radius:25px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+#timer{display:flex;justify-content:space-around;gap:10px}
+.timeCard{background:linear-gradient(180deg,#ffd1e3,#ffeaf2);border-radius:20px;padding:12px;flex:1;text-align:center}
+.timeCard span{display:block;font-size:1.8rem;font-weight:bold}
+
+/* ===== ÚNICO CAMBIO ===== */
+#dayContent{
+  background:#fff;
+  margin:1rem auto;
+  padding:1.5rem;
+  border-radius:20px;
+  max-width:600px;
+  box-shadow:0 10px 25px rgba(0,0,0,.1);
+  text-align:center;
+}
+
+#adminControls{text-align:center;margin-bottom:1rem;display:none}
+
+.flower{position:fixed;bottom:-60px;font-size:28px;animation:floatUp linear infinite;pointer-events:none;opacity:.85}
+@keyframes floatUp{from{transform:translateY(0)}to{transform:translateY(-120vh)}}
+
+/* ===== SUDOKU ===== */
+#sudoku{
+  display:grid;
+  grid-template-columns:repeat(9,1fr);
+  max-width:360px;
+  margin:15px auto;
+  border:3px solid #b84b74;
+}
+#sudoku input{
+  width:100%;
+  height:40px;
+  text-align:center;
+  font-size:1.1rem;
+  border:1px solid #d68aa8;
+  outline:none;
+}
+#sudoku input:disabled{
+  background:#ffd1e3;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div id="login">
+  <div class="login-box">
+    <h2>Ingreso</h2>
+    <input id="user" placeholder="Usuario">
+    <input id="pass" type="password" placeholder="Contraseña">
+    <button onclick="loginUser()">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <h1>Hasta nuestro reencuentro</h1>
+
+  <div id="timerBox">
+    <div id="timer">
+      <div class="timeCard"><span id="d">0</span>Días</div>
+      <div class="timeCard"><span id="h">0</span>Horas</div>
+      <div class="timeCard"><span id="m">0</span>Min</div>
+      <div class="timeCard"><span id="s">0</span>Seg</div>
+    </div>
+  </div>
+
+  <div id="adminControls">
+    <button onclick="changeDay(-1)">◀ Día</button>
+    <button onclick="changeDay(1)">Día ▶</button>
+  </div>
+
+  <div id="dayContent"></div>
+</div>
+
+<script>
+/* ========= LOGIN ========= */
+const USERS={
+  Jaziel:{password:'Amor123',role:'user'},
+  Juan:{password:'admin123',role:'admin'}
+};
+
+let role=null;
+let manualDay=null;
+
+function loginUser(){
+  if(USERS[user.value] && USERS[user.value].password===pass.value){
+    role=USERS[user.value].role;
+    login.style.display='none';
+    app.style.display='block';
+    if(role==='admin') adminControls.style.display='block';
+    renderDay();
+    startTimer();
+  }else alert('Credenciales incorrectas');
+}
+
+/* ========= MENSAJES ========= */
+const DAY_MESSAGES={
+  1:"Me emociona saber que hoy empieza el conteo regresivo",
+  2:"El clásico juego de la culebrita para pasar el rato",
+  3:`<div style="text-align:center;font-style:italic">“Si te quiero es porque sos mi amor…”</div><div style="text-align:right">— Mario Benedetti</div>`,
+  4:`Tu carisma y tu forma de ser iluminan mi vida cada día.`,
+  5:`La espera también es una forma de amar.`,
+  6:`Otro clásico más, el sudoku.`,
+  7:`Tener nuevas experiencias contigo es un regalo maravilloso.`,
+  8:`Cada día afirma mi deseo de formar una familia a tu lado.`,
+  9:`<div style="text-align:center;font-style:italic">“Pero quiero intentarlo… porque te quiero a ti.”</div><div style="text-align:right">— Diario de una pasión</div>`,
+  10:`No existe sonrisa más hermosa que la tuya.`,
+  11:`5, 7 y 9 son tus números de la suerte, pero la suerte la tuve yo al conocerte.`,
+  12:`Te extraño más de lo que las palabras pueden expresar.`,
+  13:`
+  <div style="
+    background:#1e1e1e;
+    color:#fff;
+    border-radius:18px;
+    padding:16px;
+    display:flex;
+    gap:15px;
+    align-items:center;
+  ">
+    <div style="
+      width:60px;
+      height:60px;
+      background:#333;
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:30px;
+    ">🎵</div>
+    <div style="flex:1">
+      <strong>Yellow</strong><br>
+      <span style="font-size:.85rem;color:#ccc">Coldplay</span>
+      <p style="margin-top:8px;font-size:.9rem;color:#aaa">
+        “You know I love you so?”
+      </p>
+    </div>
+  </div>
+  `,
+  14:`No puedo dejar de extrañarte.`,
+  15:`Tus ojos me hipnotizan, son más hermosos que un atardecer.`,
+  16:`Contando los días para poder abrazarte.`,
+  17:`Me inspiras a ser mejor cada día que pasa.`,
+  18:`Escucharte es mi hobbie favorito.`,
+  19:`Cuentame todo, nunca dudes en compartir cómo te sientes.`,
+  20:`Y sin pensarlo, nos volvimos cómplices de una nueva historia.`,
+  21:`Ahora en cada aventura anhelo que estés a mi lado.`,
+  22:`<div style="text-align:center;font-style:italic">“Te quiero para siempre, sin condiciones ni reservas.”</div><div style="text-align:right">— Pablo Neruda</div>`,
+  23:`Cada canción de amor me hace pensar en ti.`,
+  24:`Mi meta es hacerte sentir amada y respetada tanto como pueda.`,
+  25:`Cada día que pasa, mi amor por ti crece más y más.`,
+  26:`Tu sonrisa será la mejor recompensa después de tanta espera.`,
+  27:`<div style="text-align:center;font-style:italic">“Eres mi hoy y todos mis mañanas.”</div><div style="text-align:right">— Leo Christopher</div>`,
+  28:`No puedo esperar para crear nuevos recuerdos juntos.`,
+  29:`Contigo quiero mil locuras, de esas que se recuerdan con una sonrisa.`,
+  30:`Te amo inmensamente.`,
+  31:`Hoy es el día que hemos estado esperando. ¡Por fin juntos!`
+};
+
+/* ========= JUEGOS ========= */
+const DAY_GAMES={
+  2:`<canvas id="snake" width="300" height="300" style="background:#ffe6f0;border-radius:15px;display:block;margin:auto"></canvas>
+     <button onclick="startSnake()">🔄 Reiniciar juego</button>`,
+  6:`<div id="sudoku"></div><button onclick="checkSudoku()">✔ Verificar</button>`
+};
+
+/* ========= FECHA / RENDER ========= */
+function nowBogota(){
+  const n=new Date();
+  return new Date(n.getTime()+n.getTimezoneOffset()*60000-5*3600000);
+}
+function getToday(){return nowBogota().getDate();}
+function getDay(){return manualDay??getToday();}
+
+function renderDay(){
+  const d=getDay();
+  dayContent.innerHTML=`<h2>Día ${d}</h2>${DAY_MESSAGES[d]||""}${DAY_GAMES[d]||""}`;
+  if(d===6) setTimeout(createSudoku,50);
+}
+
+function changeDay(s){
+  if(role!=='admin')return;
+  manualDay=(manualDay??getDay())+s;
+  manualDay=Math.max(1,Math.min(31,manualDay));
+  renderDay();
+}
+
+function startTimer(){
+  const end=new Date("2026-01-31T23:59:59-05:00");
+  setInterval(()=>{
+    const diff=Math.max(0,end-nowBogota());
+    d.textContent=Math.floor(diff/86400000);
+    h.textContent=Math.floor(diff/3600000)%24;
+    m.textContent=Math.floor(diff/60000)%60;
+    s.textContent=Math.floor(diff/1000)%60;
+  },1000);
+}
+
+['🌷','🌸','🪷'].forEach(()=>setInterval(()=>{
+  const f=document.createElement('div');
+  f.className='flower';
+  f.textContent=['🌷','🌸','🪷'][Math.random()*3|0];
+  f.style.left=Math.random()*100+'vw';
+  f.style.animationDuration=10+Math.random()*10+'s';
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(),20000);
+},900));
+
+/* ========= SUDOKU ========= */
+const solution=[5,3,4,6,7,8,9,1,2];
+function createSudoku(){
+  const b=document.getElementById("sudoku");
+  b.innerHTML="";
+  for(let i=0;i<81;i++){
+    const input=document.createElement("input");
+    if(Math.random()<0.35){
+      input.value=solution[i%9];
+      input.disabled=true;
+    }
+    b.appendChild(input);
+  }
+}
+function checkSudoku(){alert("💗 Sigue intentando");}
+</script>
+
+</body>
+</html>
